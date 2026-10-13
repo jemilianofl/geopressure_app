@@ -47,32 +47,53 @@ if uploaded_file is not None:
                 with st.sidebar.expander("Calibración Esfuerzo Efectivo (Bowers)", expanded=True):
                     st.caption("Ecuación Virgen: V = V_ml + A * (Sigma_e)^B")
                     params['bowers_vml'] = st.number_input("Velocidad Fondo Marino (ft/s)", value=5000.0, step=100.0)
-                    params['bowers_a'] = st.number_input("Parámetro A", value=15.0, step=1.0)
-                    params['bowers_b'] = st.number_input("Parámetro B", value=0.75, step=0.05)
+                    params['bowers_a'] = st.number_input("Parámetro A Global", value=15.0, step=1.0)
+                    params['bowers_b'] = st.number_input("Parámetro B Global", value=0.75, step=0.05)
 
             # 3. ZONIFICACIÓN DE PARÁMETROS OPERATIVOS EXACTOS (AMISTAD-015S1)
-            st.sidebar.header("📊 3. Perfil de Presiones y MW")
+            st.sidebar.header("📊 3. Perfil de Presiones y Zonificación")
             
             with st.sidebar.expander("Tabla de Operación (Valores Amistad-015S1)", expanded=True):
                 # Data inyectada explícitamente desde el reporte de perforación
-                op_data_base = pd.DataFrame([
-                    {"profundidad": 400, "pp": 8.8, "pcol": 8.8, "mw": 9.2, "ecd": 9.4, "sh": 11.5, "fg": 12.0, "sv": 14.7, "eaton_exp": 3.0, "ppn": 8.6},
-                    {"profundidad": 1578, "pp": 8.9, "pcol": 9.0, "mw": 9.4, "ecd": 9.8, "sh": 12.0, "fg": 12.68, "sv": 15.8, "eaton_exp": 3.0, "ppn": 8.6},
-                    {"profundidad": 7006, "pp": 9.5, "pcol": 10.5, "mw": 10.8, "ecd": 11.1, "sh": 13.6, "fg": 14.76, "sv": 16.5, "eaton_exp": 3.0, "ppn": 8.9},
-                    {"profundidad": 8000, "pp": 9.5, "pcol": 11.0, "mw": 11.2, "ecd": 11.6, "sh": 13.8, "fg": 16.8, "sv": 17.0, "eaton_exp": 3.0, "ppn": 9.2},
-                    {"profundidad": 8500, "pp": 9.7, "pcol": 11.2, "mw": 11.3, "ecd": 11.7, "sh": 14.0, "fg": 17.0, "sv": 17.1, "eaton_exp": 3.0, "ppn": 9.2},
-                    {"profundidad": 9000, "pp": 9.9, "pcol": 11.4, "mw": 11.5, "ecd": 11.9, "sh": 14.3, "fg": 17.1, "sv": 17.3, "eaton_exp": 3.0, "ppn": 9.6},
-                    {"profundidad": 9999, "pp": 10.2, "pcol": 11.6, "mw": 11.6, "ecd": 12.0, "sh": 14.4, "fg": 17.2, "sv": 17.4, "eaton_exp": 3.0, "ppn": 9.8},
-                    {"profundidad": 10677, "pp": 10.8, "pcol": 11.3, "mw": 12.0, "ecd": 12.2, "sh": 14.5, "fg": 18.0, "sv": 17.7, "eaton_exp": 3.0, "ppn": 10.5}
-                ])
+                base_data = [
+                    {"profundidad": 400, "pp": 8.8, "pcol": 8.8, "mw": 9.2, "ecd": 9.4, "sh": 11.5, "fg": 12.0, "sv": 14.7},
+                    {"profundidad": 1578, "pp": 8.9, "pcol": 9.0, "mw": 9.4, "ecd": 9.8, "sh": 12.0, "fg": 12.68, "sv": 15.8},
+                    {"profundidad": 7006, "pp": 9.5, "pcol": 10.5, "mw": 10.8, "ecd": 11.1, "sh": 13.6, "fg": 14.76, "sv": 16.5},
+                    {"profundidad": 8000, "pp": 9.5, "pcol": 11.0, "mw": 11.2, "ecd": 11.6, "sh": 13.8, "fg": 16.8, "sv": 17.0},
+                    {"profundidad": 8500, "pp": 9.7, "pcol": 11.2, "mw": 11.3, "ecd": 11.7, "sh": 14.0, "fg": 17.0, "sv": 17.1},
+                    {"profundidad": 9000, "pp": 9.9, "pcol": 11.4, "mw": 11.5, "ecd": 11.9, "sh": 14.3, "fg": 17.1, "sv": 17.3},
+                    {"profundidad": 9999, "pp": 10.2, "pcol": 11.6, "mw": 11.6, "ecd": 12.0, "sh": 14.4, "fg": 17.2, "sv": 17.4},
+                    {"profundidad": 10677, "pp": 10.8, "pcol": 11.3, "mw": 12.0, "ecd": 12.2, "sh": 14.5, "fg": 18.0, "sv": 17.7}
+                ]
+                
+                # Dinámicamente inyectar columnas calibrables según el modelo seleccionado
+                if modelo_seleccionado == "Eaton":
+                    for row in base_data:
+                        row["eaton_exp"] = 3.0
+                        row["ppn"] = 8.6 if row["profundidad"] <= 1578 else (8.9 if row["profundidad"] <= 7006 else (9.2 if row["profundidad"] <= 8500 else (9.6 if row["profundidad"] <= 9000 else (9.8 if row["profundidad"] <= 9999 else 10.5))))
+                elif modelo_seleccionado == "Bowers":
+                    for row in base_data:
+                        row["bowers_a"] = params['bowers_a']
+                        row["bowers_b"] = params['bowers_b']
+
+                op_data_base = pd.DataFrame(base_data)
+                st.caption("Edita las celdas directamente para ajustar los parámetros geomecánicos de cada zona:")
                 op_df = st.data_editor(op_data_base, num_rows="dynamic", use_container_width=True)
             
-            # Reestructurar zonas para pasarlo al modelo
+            # Reestructurar zonas para pasarlo al pipeline matemático
             zonas_params = []
             prev_depth = 0
             for index, row in op_df.iterrows():
-                zonas_params.append({"start": prev_depth, "end": row["profundidad"], "eaton_exp": row["eaton_exp"], "ppn": row["ppn"]})
+                zona = {"start": prev_depth, "end": row["profundidad"]}
+                if modelo_seleccionado == "Eaton":
+                    zona["eaton_exp"] = row.get("eaton_exp", 3.0)
+                    zona["ppn"] = row.get("ppn", 8.6)
+                elif modelo_seleccionado == "Bowers":
+                    zona["bowers_a"] = row.get("bowers_a", params['bowers_a'])
+                    zona["bowers_b"] = row.get("bowers_b", params['bowers_b'])
+                zonas_params.append(zona)
                 prev_depth = row["profundidad"]
+                
             params['params_zones'] = zonas_params
 
             # Controles de Visualización
@@ -80,7 +101,7 @@ if uploaded_file is not None:
             plot_height = st.sidebar.slider("🔍 Zoom Vertical (Píxeles)", min_value=800, max_value=4000, value=1200, step=100)
 
             # Ejecutar Modelos
-            with st.spinner("Calculando red neuronal geomecánica..."):
+            with st.spinner("Ejecutando red geomecánica..."):
                 if modelo_seleccionado == "Eaton":
                     modelo = EatonModel(df, params)
                 elif modelo_seleccionado == "Bowers":
@@ -90,6 +111,6 @@ if uploaded_file is not None:
                     
                 resultados = modelo.run()
                 
-                # Renderizar Plotly
+                # Renderizar Plotly con el tema estricto oscuro de la industria
                 fig = create_advanced_log_plot(resultados, zones=None, op_data=op_df, plot_height=plot_height, curve_type=params['curve_type'])
-                st.plotly_chart(fig, width="stretch", theme=None) # theme=None obliga a usar la plantilla estricta de Plotly_dark
+                st.plotly_chart(fig, width="stretch", theme=None)

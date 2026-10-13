@@ -1,0 +1,14 @@
+[project]
+name = "geopressure-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dlisio>=1.0.4",
+    "las-read-rs>=0.1.7",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.6",
+    "plotly>=7.1.0",
+    "streamlit>=1.65.0",
+]

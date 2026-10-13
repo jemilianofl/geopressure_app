@@ -1,7 +1,7 @@
 import io
 import pandas as pd
 import dlisio
-import lasio_rs  # Nombre correcto de importación según tu documentación
+import lasio_rs  
 
 def load_well_data(uploaded_file, file_format="Auto"):
     """
@@ -18,28 +18,22 @@ def load_well_data(uploaded_file, file_format="Auto"):
         elif filename.endswith('.dlis'):
             file_format = "DLIS"
         else:
-            raise ValueError("No se pudo determinar el formato. Seleccionalo manualmente.")
+            # Aquí cambiamos el raise ValueError por un return especial o un mensaje más amigable
+            return None, "No se pudo determinar el formato automáticamente. Por favor, selecciona el formato manual en la barra lateral (ej. LAS)."
 
     try:
         if file_format == "CSV":
-            return pd.read_csv(uploaded_file)
+            return pd.read_csv(uploaded_file), None
         
         elif file_format == "EXCEL":
-            return pd.read_excel(uploaded_file)
+            return pd.read_excel(uploaded_file), None
         
         elif file_format == "LAS":
-            # Guardamos el archivo temporalmente en memoria o leemos su contenido
-            # Suponiendo que lasio_rs.read acepta un string con la ruta o el contenido crudo
-            # Como Streamlit usa UploadedFile, lo más seguro es decodificarlo a texto
             content = uploaded_file.read().decode('utf-8')
             
-            # Si tu librería en Rust acepta un string directamente (necesitas verificar si tiene read_string)
-            # Si solo acepta rutas, habría que guardarlo en un archivo temporal.
-            # Por la documentación "lasio_rs.read(path)" parece pedir ruta, pero asumamos que maneja strings:
             try:
                 las = lasio_rs.read(content) 
             except TypeError:
-                # Si falla porque requiere una ruta física de archivo:
                 import tempfile
                 import os
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".las", mode='w') as tmp:
@@ -48,8 +42,7 @@ def load_well_data(uploaded_file, file_format="Auto"):
                 las = lasio_rs.read(tmp_path)
                 os.remove(tmp_path)
                 
-            # Tu librería tiene conversión nativa a pandas muy rápida
-            return las.to_df()
+            return las.to_df(), None
             
         elif file_format == "DLIS":
             f, *tail = dlisio.load(uploaded_file)
@@ -58,7 +51,7 @@ def load_well_data(uploaded_file, file_format="Auto"):
             df = pd.DataFrame()
             for curve in curves:
                 df[curve.name] = curve.astype(float)
-            return df
+            return df, None
             
     except Exception as e:
-        raise Exception(f"Error al leer el archivo como {file_format}: {str(e)}")
+        return None, f"Error al leer el archivo como {file_format}: {str(e)}"

@@ -20,15 +20,17 @@ class EatonModel(GeopressureModel):
         if self.params['curve_type'] == 'Sonic':
             dt = self.results.get('DT', self.results.get('DTC'))
             
-            # Tendencia Normal de Compactación Matemática (Exponencial)
-            # DTn = DT_ml * e^(-c * Depth)
+            # Tendencia Normal de Compactación (Exponencial)
             dt_ml = self.params.get('dt_ml', 180.0)
             c_comp = self.params.get('c_compaction', 0.00015)
             dtn = dt_ml * np.exp(-c_comp * depth)
             self.results['DTN'] = dtn
             
-            # EATON: Pp = GSV - (GSV - Ppn) * (DTn / DT)^3
-            self.results['Pp_Uncal'] = gsv - (gsv - ppn_array) * ((dtn / dt) ** exp_array)
+            # EATON
+            pp_uncal = gsv - (gsv - ppn_array) * ((dtn / dt) ** exp_array)
+            
+            # LÍMITE FÍSICO: La presión de poro no puede ser menor a la hidrostática ni mayor a la sobrecarga
+            self.results['Pp_Uncal'] = pp_uncal.clip(lower=ppn_array, upper=gsv)
             
         elif self.params['curve_type'] == 'Resistivity':
             rt = self.results.get('RT', self.results.get('RES'))
@@ -37,7 +39,7 @@ class EatonModel(GeopressureModel):
             rtn = rt_ml * np.exp(c_comp * depth)
             self.results['RTN'] = rtn
             
-            self.results['Pp_Uncal'] = gsv - (gsv - ppn_array) * ((rt / rtn) ** exp_array)
+            pp_uncal = gsv - (gsv - ppn_array) * ((rt / rtn) ** exp_array)
+            self.results['Pp_Uncal'] = pp_uncal.clip(lower=ppn_array, upper=gsv)
             
-        # Calibración final
         self.results['Pp_Cal'] = self.results['Pp_Uncal']

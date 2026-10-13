@@ -62,6 +62,14 @@ def create_advanced_log_plot(df, zones=None, op_data=None, plot_height=1200, cur
         xaxis2=dict(title="Gradiente (ppg)", range=[7.5, 19.5], gridcolor="rgba(128,128,128,0.2)"),
         height=plot_height, 
         hovermode="y unified",
+        # --- AQUÍ ESTÁ LA CORRECCIÓN DEL CURSOR ---
+        hoverlabel=dict(
+            bgcolor="rgba(20, 20, 20, 0.95)", # Fondo casi negro
+            font_size=13,
+            font_family="monospace",
+            font_color="white",               # Letras blancas siempre
+            bordercolor="#00CED1"             # Borde cian estilo Techlog
+        ),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=40, r=40, t=60, b=40),
         paper_bgcolor="rgba(0,0,0,0)",

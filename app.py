@@ -28,11 +28,17 @@ if uploaded_file is not None:
             curvas_profundidad = [c for c in df.columns if c.upper() in ['DEPTH', 'DEPT', 'TVD', 'MD']]
             if not curvas_profundidad: curvas_profundidad = df.columns.tolist()
             
-            st.sidebar.header("⚙️ 2. Geomecánica y Tendencia")
+            # 2. CONFIGURACIÓN GEOMECÁNICA
+            st.sidebar.header("⚙️ 2. Modelo y Calibración")
             col_prof = st.sidebar.selectbox("Curva de Profundidad", curvas_profundidad)
             modelo_seleccionado = st.sidebar.selectbox("Método Analítico", ["Eaton", "Bowers", "Divergencia (Athy)"])
             
-            params = {'depth_col': col_prof, 'curve_type': 'Sonic', 'rho_matrix': 2.65}
+            params = {'depth_col': col_prof, 'curve_type': 'Sonic'}
+            
+            with st.sidebar.expander("Propiedades de Matriz y Esfuerzos", expanded=False):
+                params['rho_matrix'] = st.number_input("Densidad Matriz (g/cm3)", value=2.65)
+                params['biot_alpha'] = st.number_input("Coeficiente de Biot (α)", value=1.0, min_value=0.0, max_value=1.0, step=0.05, help="1.0 para rocas no consolidadas")
+                params['poisson_ratio'] = st.number_input("Relación de Poisson (ν)", value=0.40, min_value=0.1, max_value=0.5, step=0.01, help="Dejar en 0.4 para arcillas/arenas blandas. Si el LAS tiene curva POIS, se usará automáticamente.")
             
             if modelo_seleccionado == "Eaton":
                 with st.sidebar.expander("Calibración NCTL", expanded=True):
@@ -43,7 +49,7 @@ if uploaded_file is not None:
                     params['bowers_vml'] = st.number_input("Velocidad Fondo Marino (ft/s)", value=5000.0, step=100.0)
                     params['bowers_a'] = st.number_input("Parámetro A Global", value=15.0, step=1.0)
                     params['bowers_b'] = st.number_input("Parámetro B Global", value=0.75, step=0.05)
-
+                    
             st.sidebar.header("📊 3. Parámetros Estratigráficos (Amistad-015S1)")
             with st.sidebar.expander("Zonificación por Formación", expanded=True):
                 # Usamos los topes de las formaciones como intervalos de calibración

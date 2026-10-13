@@ -23,24 +23,27 @@ if uploaded_file is not None:
             curvas_profundidad = [c for c in df.columns if c.upper() in ['DEPTH', 'DEPT', 'TVD', 'MD']]
             if not curvas_profundidad: curvas_profundidad = df.columns.tolist()
             
+            # --- NUEVO: Control de aspecto del gráfico ---
+            st.sidebar.header("Opciones de Visualización")
+            plot_height = st.sidebar.slider("Altura del gráfico (zoom vertical)", min_value=600, max_value=3000, value=900, step=100)
+            
+            # 2. CONFIGURACIÓN GEOMECÁNICA
+            st.sidebar.header("2. Modelo Eaton (NCTL)")
             col_prof = st.sidebar.selectbox("Eje de Profundidad (ft)", curvas_profundidad)
             
-            # 2. CONFIGURACIÓN GEOMECÁNICA (EATON)
-            st.sidebar.header("2. Modelo Eaton (NCTL)")
             params = {'depth_col': col_prof, 'curve_type': 'Sonic'}
             
             params['rkb'] = st.sidebar.number_input("Elevación Mesa Rotaria (ft)", value=101.0)
             params['wd'] = st.sidebar.number_input("Tirante de Agua (ft)", value=138.0)
             
-            with st.sidebar.expander("Ajuste de Tendencia Normal (NCTL)", expanded=True):
-                st.info("DTn = DT_ml * e^(-c * Depth)")
+            with st.sidebar.expander("Calibración de Tendencia (NCTL)", expanded=True):
+                st.info("Ajusta estos valores para que la línea punteada del Track 1 coincida con las lutitas limpias.")
                 params['dt_ml'] = st.number_input("Tránsito en Lecho Marino (DT_ml)", value=160.0, step=1.0)
                 params['c_compaction'] = st.number_input("Factor Compactación (c)", value=0.00010, format="%.5f", step=0.00001)
 
             # 3. ZONAS OPERATIVAS AMISTAD-015S1
             st.sidebar.header("3. Diseño de Revestidores y MW")
             
-            # Tabla de operación con valores del caso Amistad-015S1
             op_data_base = pd.DataFrame([
                 {"profundidad": 400, "mw": 9.2, "lot_fit": 12.0, "eaton_exp": 3.0, "ppn": 8.6},
                 {"profundidad": 1578, "mw": 9.4, "lot_fit": 12.68, "eaton_exp": 3.0, "ppn": 8.6},
@@ -54,7 +57,6 @@ if uploaded_file is not None:
             st.sidebar.write("Ajusta densidades (ppg) y profundidades (ft):")
             op_df = st.sidebar.data_editor(op_data_base, num_rows="dynamic", use_container_width=True)
             
-            # Reestructurar params zonales para el modelo Eaton
             zonas_params = []
             prev_depth = 0
             for index, row in op_df.iterrows():
@@ -67,13 +69,14 @@ if uploaded_file is not None:
                 prev_depth = row["profundidad"]
             params['params_zones'] = zonas_params
 
-            if st.button("Procesar Ventana Amistad", type="primary"):
-                with st.spinner("Calculando en PPG..."):
-                    modelo = EatonModel(df, params)
-                    resultados = modelo.run()
-                    
-                    # Dibujar gráfico
-                    st.plotly_chart(create_advanced_log_plot(resultados, zones=None, op_data=op_df), width="stretch")
-                    
-                    with st.expander("Tabla de Resultados (ppg / ft)"):
-                        st.dataframe(resultados[[col_prof, 'GSV', 'Pp_Uncal', 'Pf']].dropna().head(100))
+            # Ejecución Automática
+            with st.spinner("Calculando en PPG..."):
+                modelo = EatonModel(df, params)
+                resultados = modelo.run()
+                
+                # --- NUEVO: Gráfico dinámico adaptado al tema ---
+                fig = create_advanced_log_plot(resultados, zones=None, op_data=op_df, plot_height=plot_height, curve_type=params['curve_type'])
+                st.plotly_chart(fig, width="stretch", theme="streamlit")
+                
+                with st.expander("Tabla de Resultados (ppg / ft)"):
+                    st.dataframe(resultados[[col_prof, 'GSV', 'Pp_Uncal', 'Pf']].dropna().head(100))

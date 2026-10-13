@@ -6,6 +6,7 @@ import lasio_rs
 def load_well_data(uploaded_file, file_format="Auto"):
     """
     Carga datos de pozo desde distintos formatos.
+    Incluye detección inteligente de contenido para archivos sin extensión.
     """
     if file_format == "Auto":
         filename = uploaded_file.name.lower()
@@ -18,8 +19,14 @@ def load_well_data(uploaded_file, file_format="Auto"):
         elif filename.endswith('.dlis'):
             file_format = "DLIS"
         else:
-            # Aquí cambiamos el raise ValueError por un return especial o un mensaje más amigable
-            return None, "No se pudo determinar el formato automáticamente. Por favor, selecciona el formato manual en la barra lateral (ej. LAS)."
+            # MAGIA AQUÍ: Leer los primeros 10 bytes para ver si es un archivo LAS oculto
+            content_start = uploaded_file.read(10).decode('utf-8', errors='ignore')
+            uploaded_file.seek(0) # Muy importante: regresar el "cursor" de lectura al inicio
+            
+            if content_start.upper().startswith('~V'):
+                file_format = "LAS"
+            else:
+                return None, "No se pudo determinar el formato automáticamente. Por favor, selecciona el formato manual en la barra lateral (ej. LAS)."
 
     try:
         if file_format == "CSV":

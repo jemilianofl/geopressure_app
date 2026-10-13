@@ -15,7 +15,8 @@ def create_advanced_log_plot(df, zones=None, op_data=None):
         fig.add_trace(go.Scatter(x=df["Pf"], y=df["Depth"], mode="lines", name="Gradiente Fractura (Fg)", line=dict(color="green", width=2)))
 
     # Líneas de Operación Escalonadas (MW, LOT, Colapso)
-    if op_data and not op_data.empty:
+    # CORRECCIÓN: Evaluar correctamente el DataFrame de Pandas
+    if op_data is not None and not op_data.empty:
         # Mud Weight
         fig.add_trace(go.Scatter(x=op_data["mw"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="Mud Weight (MW)", line=dict(color="brown", width=3, dash="dot")))
         # LOT / FIT
@@ -36,7 +37,7 @@ def create_advanced_log_plot(df, zones=None, op_data=None):
         yaxis_autorange="reversed", 
         height=900, 
         template="plotly_white",
-        xaxis=dict(range=[7, 20]), # Escala fija de 7 a 20 ppg para evitar deformaciones
+        xaxis=dict(range=[7, 20]), # Escala fija para evitar deformaciones
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     return fig

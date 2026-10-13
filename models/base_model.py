@@ -52,6 +52,17 @@ class GeopressureModel(ABC):
     @abstractmethod
     def calculate_pore_pressure(self):
         pass
+    
+    def calculate_fracture_pressure(self):
+        # Mathews & Kelly modificado
+        pp = self.results.get("Pp_Cal", self.results.get("Pp_Uncal"))
+        gsv = self.results["GSV"]
+        
+        # CORRECCIÓN: Evitar RuntimeWarning: invalid value encountered in log
+        # Forzar valores <= 0 a ser NaN antes de sacar logaritmo
+        safe_depth = np.where(self.depth <= 0, np.nan, self.depth)
+        v = 0.0645 * np.log(safe_depth) - 0.067
+        self.results["Pf"] = pp + (v / (1 - v)) * (gsv - pp)
 
     def run(self):
         self.calculate_overburden()

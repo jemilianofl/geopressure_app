@@ -73,7 +73,7 @@ if uploaded_file is not None:
                     resultados = modelo.run()
                     
                     # Dibujar gráfico
-                    st.plotly_chart(create_advanced_log_plot(resultados, zones=None, op_data=op_df), use_container_width=True)
+                    st.plotly_chart(create_advanced_log_plot(resultados, zones=None, op_data=op_df), width="stretch")
                     
                     with st.expander("Tabla de Resultados (ppg / ft)"):
                         st.dataframe(resultados[[col_prof, 'GSV', 'Pp_Uncal', 'Pf']].dropna().head(100))

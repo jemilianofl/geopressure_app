@@ -28,8 +28,7 @@ if uploaded_file is not None:
             curvas_profundidad = [c for c in df.columns if c.upper() in ['DEPTH', 'DEPT', 'TVD', 'MD']]
             if not curvas_profundidad: curvas_profundidad = df.columns.tolist()
             
-            # 2. CONFIGURACIÓN GEOMECÁNICA
-            st.sidebar.header("⚙️ 2. Modelo y Calibración")
+            st.sidebar.header("⚙️ 2. Geomecánica y Tendencia")
             col_prof = st.sidebar.selectbox("Curva de Profundidad", curvas_profundidad)
             modelo_seleccionado = st.sidebar.selectbox("Método Analítico", ["Eaton", "Bowers", "Divergencia (Athy)"])
             
@@ -37,8 +36,8 @@ if uploaded_file is not None:
             
             with st.sidebar.expander("Propiedades de Matriz y Esfuerzos", expanded=False):
                 params['rho_matrix'] = st.number_input("Densidad Matriz (g/cm3)", value=2.65)
-                params['biot_alpha'] = st.number_input("Coeficiente de Biot (α)", value=1.0, min_value=0.0, max_value=1.0, step=0.05, help="1.0 para rocas no consolidadas")
-                params['poisson_ratio'] = st.number_input("Relación de Poisson (ν)", value=0.40, min_value=0.1, max_value=0.5, step=0.01, help="Dejar en 0.4 para arcillas/arenas blandas. Si el LAS tiene curva POIS, se usará automáticamente.")
+                params['biot_alpha'] = st.number_input("Coeficiente de Biot (α)", value=1.0, min_value=0.0, max_value=1.0, step=0.05)
+                params['poisson_ratio'] = st.number_input("Relación de Poisson (ν)", value=0.40, min_value=0.1, max_value=0.5, step=0.01)
             
             if modelo_seleccionado == "Eaton":
                 with st.sidebar.expander("Calibración NCTL", expanded=True):
@@ -49,10 +48,9 @@ if uploaded_file is not None:
                     params['bowers_vml'] = st.number_input("Velocidad Fondo Marino (ft/s)", value=5000.0, step=100.0)
                     params['bowers_a'] = st.number_input("Parámetro A Global", value=15.0, step=1.0)
                     params['bowers_b'] = st.number_input("Parámetro B Global", value=0.75, step=0.05)
-                    
-            st.sidebar.header("📊 3. Parámetros Estratigráficos (Amistad-015S1)")
+
+            st.sidebar.header("📊 3. Parámetros Estratigráficos")
             with st.sidebar.expander("Zonificación por Formación", expanded=True):
-                # Usamos los topes de las formaciones como intervalos de calibración
                 base_data = [
                     {"formacion": "Spud Mud", "profundidad": 400, "pp_op": 8.8, "pcol": 8.8, "mw": 9.2, "ecd": 9.4, "sh": 11.5, "fg": 12.0, "sv": 14.7},
                     {"formacion": "Fm. Puna", "profundidad": 1578, "pp_op": 8.9, "pcol": 9.0, "mw": 9.4, "ecd": 9.8, "sh": 12.0, "fg": 12.68, "sv": 15.8},
@@ -73,7 +71,8 @@ if uploaded_file is not None:
                         row["bowers_a"] = params['bowers_a']
                         row["bowers_b"] = params['bowers_b']
 
-                op_df = st.data_editor(pd.DataFrame(base_data), num_rows="dynamic", use_container_width=True)
+                # EL KEY="V2" OBLIGA A REINICIAR LA CACHÉ Y SOLUCIONA EL KEYERROR
+                op_df = st.data_editor(pd.DataFrame(base_data), num_rows="dynamic", use_container_width=True, key="op_table_v2")
             
             zonas_params = []
             prev_depth = 0
@@ -104,4 +103,4 @@ if uploaded_file is not None:
                 resultados = modelo.run()
                 
                 fig = create_advanced_log_plot(resultados, zones=None, op_data=op_df, plot_height=plot_height, curve_type=params['curve_type'])
-                st.plotly_chart(fig, width="stretch", theme=None)
+                st.plotly_chart(fig, use_container_width=True, theme=None)

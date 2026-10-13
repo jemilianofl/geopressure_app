@@ -35,20 +35,26 @@ def create_advanced_log_plot(df, zones=None, op_data=None, plot_height=1200, cur
     if 'GSV' in df.columns:
         fig.add_trace(go.Scatter(x=df["GSV"], y=df["Depth"], mode="lines", name="Sobrecarga (Sv)", line=dict(color="#9370DB", width=2)), row=1, col=2)
 
-    # DATOS OPERACIONALES (Modo Escalera)
+    # DATOS OPERACIONALES (Modo Escalera Inmune a Errores)
     if op_data is not None and not op_data.empty:
-        if "pcol" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["pcol"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="P. Colapso", line=dict(color="#FF00FF", width=2, dash="dash")), row=1, col=2)
-        if "pp_op" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["pp_op"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="Pp Operacional", line=dict(color="#00BFFF", width=2)), row=1, col=2)
-        if "sh" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["sh"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="Sh", line=dict(color="#00FFFF", width=2, dash="dot")), row=1, col=2)
-        if "fg" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["fg"], y=op_data["profundidad"], mode="lines+markers", line_shape="vh", name="LOT/FIT", marker=dict(symbol="diamond", size=8, color="#32CD32"), line=dict(color="#32CD32", width=2)), row=1, col=2)
-        if "mw" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["mw"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="MW", line=dict(color="#FFA500", width=3)), row=1, col=2)
-        if "ecd" in op_data.columns:
-            fig.add_trace(go.Scatter(x=op_data["ecd"], y=op_data["profundidad"], mode="lines", line_shape="vh", name="ECD", line=dict(color="#FF4500", width=2, dash="dashdot")), row=1, col=2)
+        prof = op_data.get("profundidad")
+        if prof is not None:
+            if "pcol" in op_data.columns:
+                fig.add_trace(go.Scatter(x=op_data["pcol"], y=prof, mode="lines", line_shape="vh", name="P. Colapso", line=dict(color="#FF00FF", width=2, dash="dash")), row=1, col=2)
+            
+            # Soporta ambos nombres para compatibilidad de caché
+            col_pp = "pp_op" if "pp_op" in op_data.columns else "pp" if "pp" in op_data.columns else None
+            if col_pp:
+                fig.add_trace(go.Scatter(x=op_data[col_pp], y=prof, mode="lines", line_shape="vh", name="Pp Operacional", line=dict(color="#00BFFF", width=2)), row=1, col=2)
+            
+            if "sh" in op_data.columns:
+                fig.add_trace(go.Scatter(x=op_data["sh"], y=prof, mode="lines", line_shape="vh", name="Sh", line=dict(color="#00FFFF", width=2, dash="dot")), row=1, col=2)
+            if "fg" in op_data.columns:
+                fig.add_trace(go.Scatter(x=op_data["fg"], y=prof, mode="lines+markers", line_shape="vh", name="LOT/FIT", marker=dict(symbol="diamond", size=8, color="#32CD32"), line=dict(color="#32CD32", width=2)), row=1, col=2)
+            if "mw" in op_data.columns:
+                fig.add_trace(go.Scatter(x=op_data["mw"], y=prof, mode="lines", line_shape="vh", name="MW", line=dict(color="#FFA500", width=3)), row=1, col=2)
+            if "ecd" in op_data.columns:
+                fig.add_trace(go.Scatter(x=op_data["ecd"], y=prof, mode="lines", line_shape="vh", name="ECD", line=dict(color="#FF4500", width=2, dash="dashdot")), row=1, col=2)
 
     fig.update_layout(
         template="plotly_dark",
@@ -57,7 +63,9 @@ def create_advanced_log_plot(df, zones=None, op_data=None, plot_height=1200, cur
         height=plot_height, 
         hovermode="y unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=40, r=40, t=60, b=40)
+        margin=dict(l=40, r=40, t=60, b=40),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
     )
     
     return fig

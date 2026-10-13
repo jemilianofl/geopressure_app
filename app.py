@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from utils.data_loader import load_well_data
 from utils.plot_engine import create_advanced_log_plot
+from utils.exporter import export_csv, export_las
 from models.eaton import EatonModel
 from models.bowers import BowersModel
 from models.divergence import DivergenceModel
@@ -71,7 +72,6 @@ if uploaded_file is not None:
                         row["bowers_a"] = params['bowers_a']
                         row["bowers_b"] = params['bowers_b']
 
-                # EL KEY="V2" OBLIGA A REINICIAR LA CACHÉ Y SOLUCIONA EL KEYERROR
                 op_df = st.data_editor(pd.DataFrame(base_data), num_rows="dynamic", use_container_width=True, key="op_table_v2")
             
             zonas_params = []
@@ -104,3 +104,27 @@ if uploaded_file is not None:
                 
                 fig = create_advanced_log_plot(resultados, zones=None, op_data=op_df, plot_height=plot_height, curve_type=params['curve_type'])
                 st.plotly_chart(fig, use_container_width=True, theme=None)
+
+                # --- NUEVA SECCIÓN DE EXPORTACIÓN ---
+                st.markdown("### 💾 Exportar Curvas Generadas")
+                st.caption("Descarga toda la data procesada incluyendo los gradientes de sobrecarga, presión de poro y fractura calculados.")
+                
+                col_csv, col_las = st.columns(2)
+                
+                with col_csv:
+                    st.download_button(
+                        label="📥 Descargar archivo CSV",
+                        data=export_csv(resultados),
+                        file_name=f"Ventana_Operativa_{modelo_seleccionado}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                    
+                with col_las:
+                    st.download_button(
+                        label="📥 Descargar archivo LAS 2.0",
+                        data=export_las(resultados, col_prof),
+                        file_name=f"Ventana_Operativa_{modelo_seleccionado}.las",
+                        mime="text/plain",
+                        use_container_width=True
+                    )

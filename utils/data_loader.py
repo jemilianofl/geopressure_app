@@ -20,11 +20,10 @@ def load_well_data(uploaded_file, file_format="Auto"):
         else:
             content_start = uploaded_file.read(10).decode('utf-8', errors='ignore')
             uploaded_file.seek(0)
-            
             if content_start.upper().startswith('~V'):
                 file_format = "LAS"
             else:
-                return None, "No se pudo determinar el formato automáticamente. Selecciona el formato manual."
+                return None, "No se pudo determinar el formato. Selecciona LAS manualmente."
 
     try:
         uploaded_file.seek(0)
@@ -54,11 +53,11 @@ def load_well_data(uploaded_file, file_format="Auto"):
             for curve in curves:
                 df[curve.name] = curve.astype(float)
 
-        # LIMPIEZA DE NULOS DE LA INDUSTRIA (Evita que el gráfico explote)
+        # LIMPIEZA RIGUROSA DE NULOS
         if df is not None:
-            df = df.replace([-9999, -9999.0, -9999.25, -999.25], np.nan)
+            df = df.replace([-9999, -9999.0, -9999.25, -999.25, -999.0], np.nan)
             
         return df, None
             
     except Exception as e:
-        return None, f"Error al leer el archivo como {file_format}: {str(e)}"
+        return None, f"Error al leer el archivo: {str(e)}"

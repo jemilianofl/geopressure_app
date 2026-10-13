@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 from utils.data_loader import load_well_data
 from utils.plot_engine import create_advanced_log_plot
@@ -15,7 +16,7 @@ formato_manual = st.sidebar.selectbox("Forzar formato (si no tiene extensión)",
 if uploaded_file is not None:
     with st.spinner("Leyendo archivo..."):
         try:
-            # Aquí desempaquetamos la tupla correctamente
+            # Desempaquetamos la tupla (datos, mensaje de error)
             df, error_msg = load_well_data(uploaded_file, file_format=formato_manual)
             
             if error_msg:
@@ -61,6 +62,28 @@ if uploaded_file is not None:
                         params['prf'] = st.number_input("Profundidad Ref (PRF)", value=3329.0, step=10.0)
                         params['ms'] = st.number_input("Prof. Calibración (MS)", value=1784.0, step=10.0)
 
+                # Sidebar - Zonificación y Litología Interactiva
+                st.sidebar.header("3. Zonificación y Litología")
+                usar_zonas = st.sidebar.checkbox("Habilitar track de litología/zonas")
+                zonas = None
+                
+                if usar_zonas:
+                    # Usamos 'Depth' o 'TVD' según lo que exista en el df
+                    profundidad_col = 'TVD' if 'TVD' in df.columns else 'Depth' if 'Depth' in df.columns else df.columns[0]
+                    prof_min = float(df[profundidad_col].min())
+                    prof_max = float(df[profundidad_col].max())
+                    prof_media = float(df[profundidad_col].mean())
+
+                    # Tabla base de ejemplo editable
+                    zonas_base = pd.DataFrame([
+                        {"start": prof_min, "end": prof_media, "color": "yellow", "label": "Arena"},
+                        {"start": prof_media, "end": prof_max, "color": "green", "label": "Arcilla"}
+                    ])
+                    
+                    st.sidebar.write("Edita o agrega nuevas zonas:")
+                    zonas_df = st.sidebar.data_editor(zonas_base, num_rows="dynamic", use_container_width=True)
+                    zonas = zonas_df.to_dict('records')
+
                 # Botón de ejecución
                 if st.button("Generar Ventana Operativa", type="primary"):
                     with st.spinner("Calculando sobrecarga, poro y fractura..."):
@@ -71,7 +94,8 @@ if uploaded_file is not None:
                             
                         resultados = modelo.run()
                         
-                        st.plotly_chart(create_advanced_log_plot(resultados, zones=None), use_container_width=True)
+                        # Renderizamos el gráfico enviando las zonas que capturamos arriba
+                        st.plotly_chart(create_advanced_log_plot(resultados, zones=zonas), use_container_width=True)
                         
                         with st.expander("Ver Datos Crudos"):
                             st.dataframe(resultados)
